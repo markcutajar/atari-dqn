@@ -1,1 +1,1 @@
-# atari-dqn
+# Atari DQN
