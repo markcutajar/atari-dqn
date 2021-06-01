@@ -13,7 +13,7 @@ class Memory:
 
         # Numpy record structure array allows, different data types
         # but with also batching ability
-        self.memory = np.rec.array(np.zeros(10, dtype=memory_shape))
+        self.memory = np.zeros(memory_size, dtype=memory_shape)
         self.memory_size = memory_size
         self.memory_counter = 0
 
@@ -33,9 +33,9 @@ class Memory:
         batch = self.memory[indices]
 
         return (
-            batch.state,
-            batch.action,
-            batch.reward,
-            batch.next_state,
-            batch.done
+            np.array(batch['state']),
+            np.array(batch['action']),
+            np.array(batch['reward']),
+            np.array(batch['next_state']),
+            np.array(batch['done'])
         )

@@ -7,19 +7,10 @@ from .memory import Memory
 
 class DQNAgent:
     def __init__(
-            self,
-            input_shape,
-            action_shape,
-            gamma,
-            epsilon,
-            learning_rate,
-            batch_size=32,
-            memory_size=10000,
-            epsilon_minimum=0.01,
-            epsilon_decrement=5e-7,
-            target_replace_frequency=1000,
+            self, input_shape, action_shape, gamma, epsilon, learning_rate,
+            batch_size=32, memory_size=10000, epsilon_minimum=0.01,
+            epsilon_decrement=1e-5, target_replace_frequency=1000,
             checkpoint_dir='temp/'
-
     ):
         self.gamma = gamma
         self.epsilon = epsilon
@@ -30,6 +21,7 @@ class DQNAgent:
         self.checkpoint_dir = checkpoint_dir
 
         self.action_space = [i for i in range(action_shape)]
+        self.batch_space = [i for i in range(self.batch_size)]
         self.current_step = 0
 
         self.replay_memory = Memory(memory_size, input_shape)
@@ -70,7 +62,7 @@ class DQNAgent:
         self.target_network.load_checkpoint()
         self.eval_network.load_checkpoint()
 
-    def save_memory(self, state, action, reward, new_state, done):
+    def save_to_memory(self, state, action, reward, new_state, done):
         self.replay_memory.save(state, action, reward, new_state, done)
 
     def sample_memory(self):
@@ -86,7 +78,7 @@ class DQNAgent:
     def learn(self):
 
         # Fill all the replay memory before starting
-        if self.replay_memory.memory_counter < self.replay_memory.memory_size:
+        if self.replay_memory.memory_counter < self.batch_size * 10:
             return
 
         self.eval_network.optimizer.zero_grad()
@@ -95,15 +87,15 @@ class DQNAgent:
 
         # For each item in batch we need the action_value of the specific action
         action_values = self.eval_network.forward(states)
-        indices = np.arange(self.batch_size)
-        action_values = action_values[indices, actions]
+        action_values = action_values[self.batch_space, actions]
 
         # We need the next state max action values. We forward next_states,
         # through the target network, take a max over the action dimension
         # and return the first value of the tuple (value, indices)
         # Doc here: https://pytorch.org/docs/master/generated/torch.max.html#torch.max
         action_values_next = self.target_network.forward(next_states)
-        action_values_next = torch.max(action_values_next, dim=1)[0]
+        action_values_next = action_values_next.max(dim=1)[0]
+
         # Mask everything that is done to zero
         action_values_next[done_flags] = 0.0
 
@@ -112,5 +104,5 @@ class DQNAgent:
 
         # Propagate errors and step
         self.eval_network.backward(action_value_target, action_values)
-        self.current_step += 1
         self.decrement_epsilon()
+        self.current_step += 1

@@ -54,8 +54,7 @@ class DeepQNetwork(nn.Module):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
     def to_tensor(self, inputs):
-        tensor = torch.tensor(inputs).to(self.device)
-        return tensor
+        return torch.tensor(inputs).to(self.device)
 
     def forward(self, inputs):
         # Convolutions
